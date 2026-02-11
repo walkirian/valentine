@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Валентинка 💖</title>
+
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        background: linear-gradient(135deg, #ff758c, #ff7eb3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+      }
+
+      .card {
+        background: white;
+        padding: 25px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        max-width: 350px;
+        width: 90%;
+        z-index: 10;
+      }
+
+      img.main-photo {
+        width: 100%;
+        border-radius: 15px;
+        margin-bottom: 15px;
+        transition:
+          opacity 1s ease,
+          transform 1s ease;
+      }
+
+      .fade {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+
+      h1 {
+        font-size: 22px;
+        margin-bottom: 20px;
+      }
+
+      .buttons {
+        display: flex;
+        justify-content: space-around;
+      }
+
+      button {
+        padding: 12px 25px;
+        font-size: 18px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      #yesBtn {
+        background: #4caf50;
+        color: white;
+      }
+      #noBtn {
+        background: #ccc;
+      }
+
+      /* Сердечки */
+      .heart {
+        position: fixed;
+        font-size: 22px;
+        animation: float 4s linear forwards;
+        pointer-events: none;
+      }
+
+      @keyframes float {
+        from {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(-300px) scale(2);
+          opacity: 0;
+        }
+      }
+
+      /* Фото-дождь */
+      .photo-rain {
+        position: fixed;
+        top: -120px;
+        width: 80px;
+        border-radius: 10px;
+        animation: fall linear forwards;
+        pointer-events: none;
+        opacity: 0.9;
+      }
+
+      @keyframes fall {
+        to {
+          transform: translateY(120vh) rotate(10deg);
+          opacity: 0;
+        }
+      }
+
+      .result {
+        font-size: 28px;
+        color: #e91e63;
+        margin-top: 20px;
+        min-height: 40px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <img id="photo" class="main-photo" src="photo.jpg" />
+      <h1 id="question">Будешь моей валентинкой? 💖</h1>
+
+      <div class="buttons">
+        <button id="yesBtn">ДА</button>
+        <button id="noBtn">НЕТ</button>
+      </div>
+
+      <div class="result" id="result"></div>
+    </div>
+
+    <audio id="music" src="music.mp3"></audio>
+
+    <script>
+      const yesBtn = document.getElementById("yesBtn");
+      const noBtn = document.getElementById("noBtn");
+      const photo = document.getElementById("photo");
+      const music = document.getElementById("music");
+      const result = document.getElementById("result");
+      const question = document.getElementById("question");
+
+      let scale = 1;
+      let accepted = false;
+
+      const photos = [
+        "photos/1.jpg",
+        "photos/2.jpg",
+        "photos/3.jpg",
+        "photos/4.jpg",
+        "photos/5.jpg",
+        "photos/6.jpg",
+        "photos/7.jpg",
+        "photos/8.jpg",
+        "photos/9.jpg",
+        "photos/10.jpg",
+        "photos/12.jpg",
+        "photos/13.jpg",
+        "photos/14.jpg",
+        "photos/15.jpg",
+      ];
+
+      function vibrate(p) {
+        if (navigator.vibrate) navigator.vibrate(p);
+      }
+
+      function heartRain(count = 80) {
+        for (let i = 0; i < count; i++) {
+          const h = document.createElement("div");
+          h.className = "heart";
+          h.innerHTML = "❤️";
+          h.style.left = Math.random() * window.innerWidth + "px";
+          h.style.bottom = "-20px";
+          h.style.animationDuration = 2 + Math.random() * 2 + "s";
+          document.body.appendChild(h);
+          setTimeout(() => h.remove(), 4000);
+        }
+      }
+
+      function typeText(text) {
+        let i = 0;
+        result.innerHTML = "";
+        const timer = setInterval(() => {
+          result.innerHTML += text[i++];
+          if (i === text.length) clearInterval(timer);
+        }, 120);
+      }
+
+      /* ДОЖДЬ ИЗ ФОТО */
+      function startPhotoRain() {
+        setInterval(() => {
+          const img = document.createElement("img");
+          img.src = photos[Math.floor(Math.random() * photos.length)];
+          img.className = "photo-rain";
+          img.style.left = Math.random() * window.innerWidth + "px";
+          img.style.animationDuration = 6 + Math.random() * 4 + "s";
+          img.style.width = 60 + Math.random() * 40 + "px";
+          document.body.appendChild(img);
+          setTimeout(() => img.remove(), 10000);
+        }, 400);
+      }
+
+      noBtn.addEventListener("click", () => {
+        vibrate(50);
+        noBtn.style.background = "red";
+        scale += 0.18;
+        yesBtn.style.transform = `scale(${scale})`;
+      });
+
+      yesBtn.addEventListener("click", () => {
+        if (accepted) return;
+        accepted = true;
+
+        vibrate([100, 50, 100, 50, 200]);
+        music.play();
+        heartRain(120);
+        startPhotoRain();
+
+        photo.classList.add("fade");
+        setTimeout(() => {
+          photo.src = "love.gif";
+          photo.classList.remove("fade");
+        }, 1000);
+
+        yesBtn.style.display = "none";
+        noBtn.style.display = "none";
+        question.style.display = "none";
+
+        setTimeout(() => typeText("Я знал 💖"), 1400);
+      });
+    </script>
+  </body>
+</html>
