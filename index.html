@@ -8,12 +8,19 @@
       body {
         margin: 0;
         height: 100vh;
+        overflow: hidden;
         background: linear-gradient(135deg, #ff758c, #ff7eb3);
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: Arial, sans-serif;
-        overflow: hidden;
+      }
+
+      /* сцена для эффектов */
+      .scene {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
       }
 
       .card {
@@ -21,13 +28,14 @@
         padding: 25px;
         border-radius: 20px;
         text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         max-width: 350px;
         width: 90%;
         z-index: 10;
+        pointer-events: auto;
       }
 
-      img.main-photo {
+      .main-photo {
         width: 100%;
         border-radius: 15px;
         margin-bottom: 15px;
@@ -68,15 +76,21 @@
         background: #ccc;
       }
 
-      /* Сердечки */
+      .result {
+        font-size: 28px;
+        color: #e91e63;
+        margin-top: 20px;
+        min-height: 40px;
+      }
+
+      /* сердечки */
       .heart {
-        position: fixed;
-        font-size: 22px;
-        animation: float 4s linear forwards;
+        position: absolute;
+        animation: heart 5s linear forwards;
         pointer-events: none;
       }
 
-      @keyframes float {
+      @keyframes heart {
         from {
           transform: translateY(0) scale(1);
           opacity: 1;
@@ -87,34 +101,23 @@
         }
       }
 
-      /* Фото-дождь */
+      /* фото-дождь */
       .photo-rain {
-        position: fixed;
+        position: absolute;
         top: -120px;
-        width: 80px;
-        border-radius: 10px;
-        animation: fall linear forwards;
+        border-radius: 12px;
         pointer-events: none;
-        opacity: 0.9;
-      }
-
-      @keyframes fall {
-        to {
-          transform: translateY(120vh) rotate(10deg);
-          opacity: 0;
-        }
-      }
-
-      .result {
-        font-size: 28px;
-        color: #e91e63;
-        margin-top: 20px;
-        min-height: 40px;
+        opacity: 0.95;
+        transition:
+          transform 0.2s linear,
+          opacity 2s linear;
       }
     </style>
   </head>
 
   <body>
+    <div class="scene" id="scene"></div>
+
     <div class="card">
       <img id="photo" class="main-photo" src="photo.jpg" />
       <h1 id="question">Будешь моей валентинкой? 💖</h1>
@@ -130,88 +133,125 @@
     <audio id="music" src="music.mp3"></audio>
 
     <script>
+      /* ---------- НАСТРОЙКИ ---------- */
+      const photos = Array.from(
+        { length: 15 },
+        (_, i) => `photos/${i + 1}.jpg`,
+      );
+
+      /* ---------- ПЕРЕМЕННЫЕ ---------- */
       const yesBtn = document.getElementById("yesBtn");
       const noBtn = document.getElementById("noBtn");
       const photo = document.getElementById("photo");
       const music = document.getElementById("music");
       const result = document.getElementById("result");
       const question = document.getElementById("question");
+      const scene = document.getElementById("scene");
 
-      let scale = 1;
       let accepted = false;
+      let scale = 1;
+      let tiltX = 0;
+      let tiltY = 0;
 
-      const photos = [
-        "photos/1.jpg",
-        "photos/2.jpg",
-        "photos/3.jpg",
-        "photos/4.jpg",
-        "photos/5.jpg",
-        "photos/6.jpg",
-        "photos/7.jpg",
-        "photos/8.jpg",
-        "photos/9.jpg",
-        "photos/10.jpg",
-        "photos/12.jpg",
-        "photos/13.jpg",
-        "photos/14.jpg",
-        "photos/15.jpg",
-      ];
-
+      /* ---------- УТИЛИТЫ ---------- */
       function vibrate(p) {
-        if (navigator.vibrate) navigator.vibrate(p);
+        navigator.vibrate && navigator.vibrate(p);
+      }
+      function fullscreen() {
+        document.documentElement.requestFullscreen &&
+          document.documentElement.requestFullscreen();
       }
 
-      function heartRain(count = 80) {
-        for (let i = 0; i < count; i++) {
-          const h = document.createElement("div");
-          h.className = "heart";
-          h.innerHTML = "❤️";
-          h.style.left = Math.random() * window.innerWidth + "px";
-          h.style.bottom = "-20px";
-          h.style.animationDuration = 2 + Math.random() * 2 + "s";
-          document.body.appendChild(h);
-          setTimeout(() => h.remove(), 4000);
-        }
+      /* ---------- ГИРОСКОП ---------- */
+      window.addEventListener("deviceorientation", (e) => {
+        tiltX = e.gamma || 0;
+        tiltY = e.beta || 0;
+      });
+
+      /* ---------- СЕРДЕЧКИ ---------- */
+      function spawnHeart() {
+        const h = document.createElement("div");
+        h.className = "heart";
+        h.innerHTML = "❤️";
+        h.style.left = Math.random() * innerWidth + "px";
+        h.style.bottom = "-30px";
+        h.style.fontSize = 16 + Math.random() * 20 + "px";
+        scene.appendChild(h);
+        setTimeout(() => h.remove(), 5000);
+      }
+      setInterval(spawnHeart, 500);
+
+      function burstHearts(n = 150) {
+        for (let i = 0; i < n; i++) spawnHeart();
       }
 
+      /* ---------- ТЕКСТ ---------- */
       function typeText(text) {
         let i = 0;
         result.innerHTML = "";
-        const timer = setInterval(() => {
+        const t = setInterval(() => {
           result.innerHTML += text[i++];
-          if (i === text.length) clearInterval(timer);
+          if (i === text.length) clearInterval(t);
         }, 120);
       }
 
-      /* ДОЖДЬ ИЗ ФОТО */
-      function startPhotoRain() {
-        setInterval(() => {
-          const img = document.createElement("img");
-          img.src = photos[Math.floor(Math.random() * photos.length)];
-          img.className = "photo-rain";
-          img.style.left = Math.random() * window.innerWidth + "px";
-          img.style.animationDuration = 6 + Math.random() * 4 + "s";
-          img.style.width = 60 + Math.random() * 40 + "px";
-          document.body.appendChild(img);
-          setTimeout(() => img.remove(), 10000);
-        }, 400);
+      /* ---------- ПЛАВНЫЙ ФОТО-ДОЖДЬ С ИСЧЕЗНОВЕНИЕМ ---------- */
+      function spawnPhoto() {
+        const img = document.createElement("img");
+        img.src = photos[Math.floor(Math.random() * photos.length)];
+        img.className = "photo-rain";
+
+        const size = 60 + Math.random() * 50;
+        img.style.width = size + "px";
+        const left = Math.random() * innerWidth;
+        img.style.left = left + "px";
+
+        scene.appendChild(img);
+
+        let y = -120;
+        const speed = 0.7 + Math.random() * 0.5;
+
+        function animate() {
+          y += speed;
+          img.style.transform = `translateY(${y}px) translateX(${tiltX * 0.5}px)`;
+
+          // плавное исчезновение, когда почти дошло до низа
+          if (y > innerHeight - 150) {
+            img.style.opacity = 0;
+          }
+
+          if (y < innerHeight + 150) {
+            requestAnimationFrame(animate);
+          } else {
+            img.remove();
+          }
+        }
+        animate();
       }
 
-      noBtn.addEventListener("click", () => {
+      /* ---------- ПАРАЛЛАКС ---------- */
+      function parallax() {
+        document.body.style.backgroundPosition = `${50 + tiltX / 2}% ${50 + tiltY / 2}%`;
+        requestAnimationFrame(parallax);
+      }
+      parallax();
+
+      /* ---------- КНОПКИ ---------- */
+      noBtn.onclick = () => {
         vibrate(50);
         noBtn.style.background = "red";
         scale += 0.18;
         yesBtn.style.transform = `scale(${scale})`;
-      });
+      };
 
-      yesBtn.addEventListener("click", () => {
+      yesBtn.onclick = () => {
         if (accepted) return;
         accepted = true;
 
+        fullscreen();
         vibrate([100, 50, 100, 50, 200]);
         music.play();
-        heartRain(120);
-        startPhotoRain();
+        burstHearts();
 
         photo.classList.add("fade");
         setTimeout(() => {
@@ -224,7 +264,9 @@
         question.style.display = "none";
 
         setTimeout(() => typeText("Я знал 💖"), 1400);
-      });
+
+        setInterval(spawnPhoto, 350);
+      };
     </script>
   </body>
 </html>
