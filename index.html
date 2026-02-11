@@ -16,7 +16,6 @@
         font-family: Arial, sans-serif;
       }
 
-      /* сцена для эффектов */
       .scene {
         position: fixed;
         inset: 0;
@@ -83,34 +82,17 @@
         min-height: 40px;
       }
 
-      /* сердечки */
-      .heart {
-        position: absolute;
-        animation: heart 5s linear forwards;
-        pointer-events: none;
-      }
-
-      @keyframes heart {
-        from {
-          transform: translateY(0) scale(1);
-          opacity: 1;
-        }
-        to {
-          transform: translateY(-300px) scale(2);
-          opacity: 0;
-        }
-      }
-
-      /* фото-дождь */
-      .photo-rain {
+      /* Фото-дождь и сердечки */
+      .falling {
         position: absolute;
         top: -120px;
-        border-radius: 12px;
         pointer-events: none;
         opacity: 0.95;
         transition:
           transform 0.2s linear,
           opacity 2s linear;
+        font-size: 24px;
+        user-select: none;
       }
     </style>
   </head>
@@ -138,6 +120,7 @@
         { length: 15 },
         (_, i) => `photos/${i + 1}.jpg`,
       );
+      const heartsSymbols = ["❤️", "💖", "💘", "💕", "❣️", "💝"];
 
       /* ---------- ПЕРЕМЕННЫЕ ---------- */
       const yesBtn = document.getElementById("yesBtn");
@@ -153,37 +136,18 @@
       let tiltX = 0;
       let tiltY = 0;
 
-      /* ---------- УТИЛИТЫ ---------- */
-      function vibrate(p) {
-        navigator.vibrate && navigator.vibrate(p);
-      }
-      function fullscreen() {
-        document.documentElement.requestFullscreen &&
-          document.documentElement.requestFullscreen();
-      }
-
       /* ---------- ГИРОСКОП ---------- */
       window.addEventListener("deviceorientation", (e) => {
         tiltX = e.gamma || 0;
         tiltY = e.beta || 0;
       });
 
-      /* ---------- СЕРДЕЧКИ ---------- */
-      function spawnHeart() {
-        const h = document.createElement("div");
-        h.className = "heart";
-        h.innerHTML = "❤️";
-        h.style.left = Math.random() * innerWidth + "px";
-        h.style.bottom = "-30px";
-        h.style.fontSize = 16 + Math.random() * 20 + "px";
-        scene.appendChild(h);
-        setTimeout(() => h.remove(), 5000);
+      /* ---------- ПАРАЛЛАКС ---------- */
+      function parallax() {
+        document.body.style.backgroundPosition = `${50 + tiltX / 2}% ${50 + tiltY / 2}%`;
+        requestAnimationFrame(parallax);
       }
-      setInterval(spawnHeart, 500);
-
-      function burstHearts(n = 150) {
-        for (let i = 0; i < n; i++) spawnHeart();
-      }
+      parallax();
 
       /* ---------- ТЕКСТ ---------- */
       function typeText(text) {
@@ -195,50 +159,51 @@
         }, 120);
       }
 
-      /* ---------- ПЛАВНЫЙ ФОТО-ДОЖДЬ С ИСЧЕЗНОВЕНИЕМ ---------- */
-      function spawnPhoto() {
-        const img = document.createElement("img");
-        img.src = photos[Math.floor(Math.random() * photos.length)];
-        img.className = "photo-rain";
+      /* ---------- ПАДАЮЩИЕ ОБЪЕКТЫ (ФОТО + СЕРДЕЧКИ) ---------- */
+      function spawnFalling(type = "photo") {
+        const el = document.createElement("div");
+        el.className = "falling";
 
-        const size = 60 + Math.random() * 50;
-        img.style.width = size + "px";
-        const left = Math.random() * innerWidth;
-        img.style.left = left + "px";
+        if (type === "photo") {
+          el.style.backgroundImage = `url(${photos[Math.floor(Math.random() * photos.length)]})`;
+          el.style.backgroundSize = "cover";
+          el.style.width = `${60 + Math.random() * 50}px`;
+          el.style.height = el.style.width;
+        } else {
+          el.innerHTML =
+            heartsSymbols[Math.floor(Math.random() * heartsSymbols.length)];
+          el.style.fontSize = `${20 + Math.random() * 20}px`;
+        }
 
-        scene.appendChild(img);
+        el.style.left = Math.random() * window.innerWidth + "px";
+        scene.appendChild(el);
 
         let y = -120;
         const speed = 0.7 + Math.random() * 0.5;
-
         function animate() {
           y += speed;
-          img.style.transform = `translateY(${y}px) translateX(${tiltX * 0.5}px)`;
+          el.style.transform = `translateY(${y}px) translateX(${tiltX * 0.5}px)`;
 
-          // плавное исчезновение, когда почти дошло до низа
+          // плавное исчезновение у низа
           if (y > innerHeight - 150) {
-            img.style.opacity = 0;
+            el.style.opacity = 0;
           }
 
           if (y < innerHeight + 150) {
             requestAnimationFrame(animate);
           } else {
-            img.remove();
+            el.remove();
           }
         }
         animate();
       }
 
-      /* ---------- ПАРАЛЛАКС ---------- */
-      function parallax() {
-        document.body.style.backgroundPosition = `${50 + tiltX / 2}% ${50 + tiltY / 2}%`;
-        requestAnimationFrame(parallax);
-      }
-      parallax();
+      /* ---------- СЕРДЕЧКИ НА ФОНЕ ---------- */
+      setInterval(() => spawnFalling("heart"), 300);
 
       /* ---------- КНОПКИ ---------- */
       noBtn.onclick = () => {
-        vibrate(50);
+        navigator.vibrate && navigator.vibrate(50);
         noBtn.style.background = "red";
         scale += 0.18;
         yesBtn.style.transform = `scale(${scale})`;
@@ -248,10 +213,13 @@
         if (accepted) return;
         accepted = true;
 
-        fullscreen();
-        vibrate([100, 50, 100, 50, 200]);
+        document.documentElement.requestFullscreen &&
+          document.documentElement.requestFullscreen();
+        navigator.vibrate && navigator.vibrate([100, 50, 100, 50, 200]);
         music.play();
-        burstHearts();
+
+        // усиленный поток сердечек
+        for (let i = 0; i < 50; i++) spawnFalling("heart");
 
         photo.classList.add("fade");
         setTimeout(() => {
@@ -265,7 +233,8 @@
 
         setTimeout(() => typeText("Я знал 💖"), 1400);
 
-        setInterval(spawnPhoto, 350);
+        // запуск фото-дождя
+        setInterval(() => spawnFalling("photo"), 350);
       };
     </script>
   </body>
