@@ -9,11 +9,28 @@
         margin: 0;
         height: 100vh;
         overflow: hidden;
-        background: linear-gradient(135deg, #ff758c, #ff7eb3);
+        font-family: Arial, sans-serif;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: Arial, sans-serif;
+
+        /* градиент */
+        background: linear-gradient(270deg, #ff758c, #ff7eb3, #fddb92, #ff758c);
+        background-size: 800% 800%;
+        animation: gradientBG 15s ease infinite;
+      }
+
+      /* анимация градиента */
+      @keyframes gradientBG {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
       }
 
       .scene {
