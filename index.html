@@ -20,6 +20,7 @@
         position: fixed;
         inset: 0;
         pointer-events: none;
+        z-index: 0;
       }
 
       .card {
@@ -82,7 +83,7 @@
         min-height: 40px;
       }
 
-      /* Фото-дождь и сердечки */
+      /* падающие элементы (фотки + сердечки) */
       .falling {
         position: absolute;
         top: -120px;
@@ -91,7 +92,6 @@
         transition:
           transform 0.2s linear,
           opacity 2s linear;
-        font-size: 24px;
         user-select: none;
       }
     </style>
@@ -120,6 +120,11 @@
         { length: 15 },
         (_, i) => `photos/${i + 1}.jpg`,
       );
+      const heartPNGs = [
+        "hearts/heart1.png",
+        "hearts/heart2.png",
+        "hearts/heart3.png",
+      ];
       const heartsSymbols = ["❤️", "💖", "💘", "💕", "❣️", "💝"];
 
       /* ---------- ПЕРЕМЕННЫЕ ---------- */
@@ -159,7 +164,7 @@
         }, 120);
       }
 
-      /* ---------- ПАДАЮЩИЕ ОБЪЕКТЫ (ФОТО + СЕРДЕЧКИ) ---------- */
+      /* ---------- ПАДАЮЩИЕ ОБЪЕКТЫ (ФОТО + СЕРДЕЧКИ PNG) ---------- */
       function spawnFalling(type = "photo") {
         const el = document.createElement("div");
         el.className = "falling";
@@ -167,39 +172,58 @@
         if (type === "photo") {
           el.style.backgroundImage = `url(${photos[Math.floor(Math.random() * photos.length)]})`;
           el.style.backgroundSize = "cover";
-          el.style.width = `${60 + Math.random() * 50}px`;
-          el.style.height = el.style.width;
+          const size = 60 + Math.random() * 50;
+          el.style.width = `${size}px`;
+          el.style.height = `${size}px`;
+          el.style.borderRadius = `${10 + Math.random() * 40}%`; // закругление/овалы
+          el.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
+        } else if (type === "heartPNG") {
+          const img = document.createElement("img");
+          img.src = heartPNGs[Math.floor(Math.random() * heartPNGs.length)];
+          img.style.width = `${20 + Math.random() * 40}px`;
+          img.style.position = "absolute";
+          img.style.left = `${Math.random() * window.innerWidth}px`;
+          img.style.top = "-50px";
+          img.style.pointerEvents = "none";
+          img.style.opacity = 0.95;
+          scene.appendChild(img);
+          let y = -50;
+          const speed = 1.5 + Math.random() * 0.5;
+          function animate() {
+            y += speed;
+            img.style.transform = `translateY(${y}px)`;
+            if (y > window.innerHeight - 150) img.style.opacity = 0;
+            if (y < window.innerHeight + 150) requestAnimationFrame(animate);
+            else img.remove();
+          }
+          animate();
+          return;
         } else {
+          // для разнообразия, можно добавлять символы сердечек
           el.innerHTML =
             heartsSymbols[Math.floor(Math.random() * heartsSymbols.length)];
           el.style.fontSize = `${20 + Math.random() * 20}px`;
         }
 
         el.style.left = Math.random() * window.innerWidth + "px";
+        el.style.top = "-120px";
         scene.appendChild(el);
 
         let y = -120;
-        const speed = 0.7 + Math.random() * 0.5;
+        const speed = 1.5 + Math.random() * 0.5; // увеличенная скорость
         function animate() {
           y += speed;
           el.style.transform = `translateY(${y}px) translateX(${tiltX * 0.5}px)`;
-
-          // плавное исчезновение у низа
-          if (y > innerHeight - 150) {
-            el.style.opacity = 0;
-          }
-
-          if (y < innerHeight + 150) {
-            requestAnimationFrame(animate);
-          } else {
-            el.remove();
-          }
+          if (y > window.innerHeight - 150) el.style.opacity = 0;
+          if (y < window.innerHeight + 150) requestAnimationFrame(animate);
+          else el.remove();
         }
         animate();
       }
 
-      /* ---------- СЕРДЕЧКИ НА ФОНЕ ---------- */
-      setInterval(() => spawnFalling("heart"), 300);
+      /* ---------- ПОСТОЯННЫЙ ДАЖДЬ ---------- */
+      setInterval(() => spawnFalling("heartPNG"), 150); // много сердечек PNG
+      setInterval(() => spawnFalling("photo"), 300); // фотки падают
 
       /* ---------- КНОПКИ ---------- */
       noBtn.onclick = () => {
@@ -218,8 +242,10 @@
         navigator.vibrate && navigator.vibrate([100, 50, 100, 50, 200]);
         music.play();
 
-        // усиленный поток сердечек
-        for (let i = 0; i < 50; i++) spawnFalling("heart");
+        // усиленный поток сердечек при "ДА"
+        for (let i = 0; i < 50; i++) {
+          setTimeout(() => spawnFalling("heartPNG"), i * 50);
+        }
 
         photo.classList.add("fade");
         setTimeout(() => {
@@ -232,59 +258,7 @@
         question.style.display = "none";
 
         setTimeout(() => typeText("Я знал 💖"), 1400);
-
-        // запуск фото-дождя
-        setInterval(() => spawnFalling("photo"), 350);
       };
-      const heartPNGs = [
-        "hearts/heart1.png",
-        "hearts/heart2.png",
-        "hearts/heart3.png",
-      ];
-
-      function spawnHeartPNG() {
-        const img = document.createElement("img");
-        img.src = heartPNGs[Math.floor(Math.random() * heartPNGs.length)];
-        img.style.position = "absolute";
-        img.style.width = `${20 + Math.random() * 40}px`;
-        img.style.left = `${Math.random() * window.innerWidth}px`;
-        img.style.top = "-50px";
-        img.style.opacity = 0.95;
-        img.style.pointerEvents = "none";
-        img.style.transition = "opacity 2s linear";
-
-        document.getElementById("scene").appendChild(img);
-
-        let y = -50;
-        const speed = 1.3 + Math.random() * 0.5;
-
-        function animate() {
-          y += speed;
-          img.style.transform = `translateY(${y}px)`;
-
-          // плавное исчезновение у низа
-          if (y > window.innerHeight - 150) {
-            img.style.opacity = 0;
-          }
-
-          if (y < window.innerHeight + 150) {
-            requestAnimationFrame(animate);
-          } else {
-            img.remove();
-          }
-        }
-        animate();
-      }
-
-      // Постоянный дождь сердечек
-      setInterval(spawnHeartPNG, 200); // каждые 0.2 сек новое сердечко
-
-      // При нажатии "ДА" можно добавить еще много
-      function burstHeartsPNG(count = 50) {
-        for (let i = 0; i < count; i++) {
-          setTimeout(spawnHeartPNG, i * 50); // постепенный взрыв
-        }
-      }
     </script>
   </body>
 </html>
