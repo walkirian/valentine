@@ -233,10 +233,6 @@
         animate();
       }
 
-      /* ---------- ПОСТОЯННЫЙ ДАЖДЬ ---------- */
-      setInterval(() => spawnFalling("heartPNG"), 150);
-      setInterval(() => spawnFalling("photo"), 300);
-
       /* ---------- КНОПКИ ---------- */
       noBtn.onclick = () => {
         navigator.vibrate && navigator.vibrate(50);
@@ -254,9 +250,16 @@
         navigator.vibrate && navigator.vibrate([100, 50, 100, 50, 200]);
         music.play();
 
+        // ---- СЕРДЕЧКИ И ФОТКИ НАЧИНАЮТ ПАДАТЬ ТОЛЬКО СЕЙЧАС ----
+        // 50 быстрых сердечек сразу
         for (let i = 0; i < 50; i++) {
           setTimeout(() => spawnFalling("heartPNG"), i * 50);
         }
+
+        // Бесконечный дождь из PNG-сердечек
+        setInterval(() => spawnFalling("heartPNG"), 150);
+        // Бесконечный дождь из фотографий
+        setInterval(() => spawnFalling("photo"), 300);
 
         photo.classList.add("fade");
         setTimeout(() => {
